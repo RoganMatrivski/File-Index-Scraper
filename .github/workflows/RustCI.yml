@@ -126,16 +126,17 @@ jobs:
           # windows is the only OS using a different convention for executable file name
           if [[ $OS =~ ^windows.*$ ]]; then
               EXEC=$NAME.exe
+              EXEC_SUFFIX=.exe
           else
               EXEC=$NAME
+              EXEC_SUFFIX=
           fi
           if [[ $GITHUB_REF_TYPE =~ ^tag$ ]]; then
             TAG=$GITHUB_REF_NAME
           else
             TAG=$GITHUB_SHA
           fi
-          mv ./target/$TARGET/release/$EXEC ./$EXEC
-          tar -czf ./artifacts/$NAME-$TARGET-$TAG.tar.gz $EXEC
+          mv ./target/$TARGET/release/$EXEC ./$NAME-$TARGET-$TAG$EXEC_SUFFIX
       - name: Archive artifact
         uses: actions/upload-artifact@v2
         with:
@@ -159,4 +160,4 @@ jobs:
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
-          files: ./artifacts/*.tar.gz
+          files: ./artifacts/*
