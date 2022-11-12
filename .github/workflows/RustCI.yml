@@ -136,13 +136,13 @@ jobs:
           else
             TAG=$GITHUB_SHA
           fi
-          mv ./target/$TARGET/release/$EXEC ./$NAME-$TARGET-$TAG$EXEC_SUFFIX
+          mv ./target/$TARGET/release/$EXEC ./artifacts/$NAME-$TARGET-$TAG$EXEC_SUFFIX
       - name: Archive artifact
         uses: actions/upload-artifact@v2
         with:
           name: result
           path: |
-            ./artifacts
+            ./artifacts/*
 
   # deploys to github releases on tag
   deploy:
@@ -154,7 +154,7 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           name: result
-          path: ./artifacts
+          path: ./artifacts/
       - name: List
         run: find ./artifacts
       - name: Release
