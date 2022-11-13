@@ -24,12 +24,12 @@ struct Args {
 }
 
 #[tokio::main]
-async fn main() {
+async fn main() -> anyhow::Result<()> {
     let args = Args::parse();
 
     let url = args.url;
     let base = args.base_path + "/";
-    let res = walker_async(url.clone(), base).await.unwrap();
+    let res = walker_async(url.clone(), base).await?;
 
     match args.format {
         FormatArgs::PlainText => {
@@ -47,4 +47,6 @@ async fn main() {
             }
         }
     }
+
+    Ok(())
 }

@@ -1,14 +1,11 @@
+use anyhow::{Context, Result};
 use futures::stream::FuturesOrdered;
 use futures::StreamExt;
 
 use crate::simple_file_info::SimpleFileInfo;
 
 #[async_recursion::async_recursion(?Send)]
-pub async fn walker_async(
-    url_root: String,
-    folder_root: String,
-) -> Result<Vec<SimpleFileInfo>, &'static str> {
-    println!("# Walking through {}", folder_root);
+pub async fn walker_async(url_root: String, folder_root: String) -> Result<Vec<SimpleFileInfo>> {
 
     let new_url = if !url_root.ends_with("/") {
         format!("{}/", url_root)
@@ -17,17 +14,19 @@ pub async fn walker_async(
     };
     let url_root = new_url;
 
-    let html: String = get_html_async(format!("{}{}", url_root, folder_root).as_str())
-        .await
-        .unwrap();
+    let html: String = get_html_async(format!("{}{}", url_root, folder_root).as_str()).await?;
 
-    let dom = tl::parse(&html, tl::ParserOptions::default()).unwrap();
+    let dom = tl::parse(&html, tl::ParserOptions::default())?;
     let parser = dom.parser();
 
     let mut dirs: Vec<String> = vec![];
     let mut files: Vec<String> = vec![];
 
-    for link in dom.query_selector("a[href]").unwrap().into_iter() {
+    let element_find = dom
+        .query_selector("a[href]")
+        .context("Failed to get link element")?;
+
+    for link in element_find.into_iter() {
         let txt = get_href_attr(link, parser).unwrap();
 
         if txt.ends_with('/') {
@@ -51,7 +50,8 @@ pub async fn walker_async(
 
     let dir_walker_results: Vec<_> = dir_walker_tasks.collect().await;
     for result in dir_walker_results {
-        let mut result = result.unwrap();
+        // ! TODO: Probably set this to just warning on error, and add alert on warning
+        let mut result = result?;
 
         paths.append(&mut result);
     }
