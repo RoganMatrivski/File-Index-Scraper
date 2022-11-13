@@ -4,6 +4,8 @@ use futures::StreamExt;
 
 use crate::simple_file_info::SimpleFileInfo;
 
+const EXCLUDED_CHARS: [char; 2] = ['/', '?'];
+
 #[tracing::instrument(skip(url_root), name = "walker")]
 #[async_recursion::async_recursion(?Send)]
 pub async fn walker_async(url_root: String, folder_root: String) -> Result<Vec<SimpleFileInfo>> {
@@ -35,6 +37,16 @@ pub async fn walker_async(url_root: String, folder_root: String) -> Result<Vec<S
 
     for link in element_find.into_iter() {
         let txt = get_href_attr(link, parser).unwrap();
+
+        // Filter out links beginning with slash or question mark
+        let link_first_char = &txt
+            .chars()
+            .next()
+            .context("Failed to get first char of the link")?;
+
+        if EXCLUDED_CHARS.contains(link_first_char) {
+            continue;
+        }
 
         if txt.ends_with('/') {
             dirs.push(txt);
