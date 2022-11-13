@@ -16,6 +16,8 @@ reqwest = { version = "0.11.12", default-features = false, features = [
 ] }
 tl = "0.7.7"
 tokio = { version = "1.21.2", features = ["rt-multi-thread", "macros"] }
+tracing = "0.1.37"
+tracing-subscriber = { version = "0.3.16", features = ["env-filter"] }
 urlencoding = "2.1.2"
 
 [profile.dev.package."*"]

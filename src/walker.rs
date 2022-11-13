@@ -4,8 +4,12 @@ use futures::StreamExt;
 
 use crate::simple_file_info::SimpleFileInfo;
 
+#[tracing::instrument(skip(url_root), name = "walker")]
 #[async_recursion::async_recursion(?Send)]
 pub async fn walker_async(url_root: String, folder_root: String) -> Result<Vec<SimpleFileInfo>> {
+    // tracing::info!("# Walking through {}", folder_root);
+    tracing::info!("Scanning directory");
+    tracing::trace!("Starting directory scan");
 
     let new_url = if !url_root.ends_with("/") {
         format!("{}/", url_root)
@@ -14,14 +18,17 @@ pub async fn walker_async(url_root: String, folder_root: String) -> Result<Vec<S
     };
     let url_root = new_url;
 
+    tracing::debug!("Fetching index HTML file");
     let html: String = get_html_async(format!("{}{}", url_root, folder_root).as_str()).await?;
 
+    tracing::trace!("Parsing HTML");
     let dom = tl::parse(&html, tl::ParserOptions::default())?;
     let parser = dom.parser();
 
     let mut dirs: Vec<String> = vec![];
     let mut files: Vec<String> = vec![];
 
+    tracing::trace!("Parsing links");
     let element_find = dom
         .query_selector("a[href]")
         .context("Failed to get link element")?;
@@ -36,6 +43,9 @@ pub async fn walker_async(url_root: String, folder_root: String) -> Result<Vec<S
         }
     }
 
+    if dirs.len() > 0 {
+        tracing::trace!("Iterating through directories")
+    };
     let mut paths: Vec<SimpleFileInfo> = vec![];
 
     let dir_walker_tasks: FuturesOrdered<_> = dirs
@@ -53,14 +63,20 @@ pub async fn walker_async(url_root: String, folder_root: String) -> Result<Vec<S
         // ! TODO: Probably set this to just warning on error, and add alert on warning
         let mut result = result?;
 
+        tracing::trace!(
+            total_result = result.len(),
+            "Appending directory iter results"
+        );
         paths.append(&mut result);
     }
 
+    tracing::trace!("Iterating through files");
     let mut fileinfos: Vec<SimpleFileInfo> = files
         .iter()
         .map(|x| SimpleFileInfo::new(folder_root.to_string(), x.to_string()))
         .collect();
 
+    tracing::trace!(total_result = fileinfos.len(), "Appending files");
     paths.append(&mut fileinfos);
 
     Ok(paths)
@@ -132,7 +148,9 @@ fn get_href_attr(
     Ok(attr.as_utf8_str().to_string())
 }
 
+#[tracing::instrument]
 async fn get_html_async(url_str: &str) -> Result<String, reqwest::Error> {
+    tracing::trace!("Sending request");
     reqwest::get(url_str).await?.text().await
 }
 
