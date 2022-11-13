@@ -36,15 +36,27 @@ pub fn initialize() -> Args {
         None => env_filter,
     };
 
-    // construct a layer that prints formatted traces to stderr
-    let fmt_layer = fmt::layer()
-        .with_writer(std::io::stderr)
-        .with_level(true) // include levels in formatted output
-        .with_target(true) // include targets
-        .with_thread_ids(true) // include the thread ID of the current thread
-        .with_thread_names(true); // include the name of the current thread
+    // Default logging layer
+    let fmt_layer = fmt::layer().with_writer(std::io::stderr);
 
-    registry().with(fmt_layer).with(env_filter).init();
+    match verbosity {
+        Some(_) => {
+            // construct a layer that prints formatted traces to stderr
+            let fmt_layer = fmt_layer
+                .with_level(true) // include levels in formatted output
+                .with_target(true) // include targets
+                .with_thread_ids(true) // include the thread ID of the current thread
+                .with_thread_names(true); // include the name of the current thread
+
+            registry().with(fmt_layer).with(env_filter).init();
+        }
+        None => {
+            // construct a layer that prints formatted traces to stderr
+            let fmt_layer = fmt_layer.without_time().compact();
+
+            registry().with(fmt_layer).with(env_filter).init();
+        }
+    };
 
     args
 }
