@@ -15,7 +15,7 @@ impl SimpleFileInfo {
         self.get_full_path()[2..].to_string()
     }
 
-    #[tracing::instrument(skip(self))]
+    #[tracing::instrument(skip(self), fields(dir = self.dir, file = self.file))]
     pub fn get_decoded_full_path(&self) -> String {
         let full_path = self.get_full_path();
         let conv_binary = urlencoding::decode_binary(full_path.as_bytes());
