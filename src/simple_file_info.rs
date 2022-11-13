@@ -17,9 +17,22 @@ impl SimpleFileInfo {
 
     #[tracing::instrument(skip(self))]
     pub fn get_decoded_full_path(&self) -> String {
-        urlencoding::decode(&self.get_full_path())
-            .unwrap()
-            .into_owned()
+        let full_path = self.get_full_path();
+        let conv_binary = urlencoding::decode_binary(full_path.as_bytes());
+
+        let dec = match std::str::from_utf8(&conv_binary) {
+            Ok(str) => str.to_owned(),
+            Err(_) => {
+                tracing::warn!(
+                    path = full_path,
+                    "Path is not a valid UTF-8 characters. Will attempt to loosely convert path."
+                );
+
+                String::from_utf8_lossy(&conv_binary).into_owned()
+            }
+        };
+
+        dec
     }
 
     pub fn new(_dir: String, _file: String) -> SimpleFileInfo {
