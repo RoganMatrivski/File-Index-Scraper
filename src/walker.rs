@@ -90,7 +90,8 @@ pub async fn walker_async(url_root: String, folder_root: String) -> Result<Vec<S
 }
 
 #[allow(dead_code)]
-fn walker(url_root: &str, folder_root: &str) -> Result<Vec<SimpleFileInfo>, &'static str> {
+#[tracing::instrument]
+fn walker(url_root: &str, folder_root: &str) -> Result<Vec<SimpleFileInfo>> {
     println!("# Walking through {}", folder_root);
 
     let new_url = if !url_root.ends_with('/') {
@@ -100,16 +101,20 @@ fn walker(url_root: &str, folder_root: &str) -> Result<Vec<SimpleFileInfo>, &'st
     };
     let url_root = new_url.as_str();
 
-    let html: String = get_html(format!("{}{}", url_root, folder_root).as_str()).unwrap();
+    let html: String = get_html(format!("{}{}", url_root, folder_root).as_str())?;
 
-    let dom = tl::parse(&html, tl::ParserOptions::default()).unwrap();
+    let dom = tl::parse(&html, tl::ParserOptions::default())?;
     let parser = dom.parser();
 
     let mut dirs: Vec<String> = vec![];
     let mut files: Vec<String> = vec![];
 
-    for link in dom.query_selector("a[href]").unwrap() {
-        let txt = get_href_attr(link, parser).unwrap();
+    let element_find = dom
+        .query_selector("a[href]")
+        .context("Failed to get link element")?;
+
+    for link in element_find {
+        let txt = get_href_attr(link, parser)?;
 
         if txt.ends_with('/') {
             dirs.push(txt);
@@ -121,7 +126,7 @@ fn walker(url_root: &str, folder_root: &str) -> Result<Vec<SimpleFileInfo>, &'st
     let mut paths: Vec<SimpleFileInfo> = vec![];
 
     for link in dirs {
-        let mut res = walker(url_root, format!("{}{}", folder_root, link).as_str()).unwrap();
+        let mut res = walker(url_root, format!("{}{}", folder_root, link).as_str())?;
 
         paths.append(&mut res);
     }
@@ -136,23 +141,18 @@ fn walker(url_root: &str, folder_root: &str) -> Result<Vec<SimpleFileInfo>, &'st
     Ok(paths)
 }
 
-fn get_href_attr(
-    node_handle: tl::NodeHandle,
-    parser: &tl::Parser<'_>,
-) -> Result<String, &'static str> {
-    let Some(el) = node_handle.get(parser) else {
-        return Err("Failed to get Element");
-    };
-
-    let Some(el_tag) = el.as_tag() else {
-        return Err("Failed to get element as tag");
-    };
-
-    let Some(attr) = el_tag.attributes().get("href").flatten() else {
-        return Err("Failed to get href attribute");
-    };
-
-    Ok(attr.as_utf8_str().to_string())
+fn get_href_attr(node_handle: tl::NodeHandle, parser: &tl::Parser<'_>) -> Result<String> {
+    Ok(node_handle
+        .get(parser)
+        .context("Failed to get element")?
+        .as_tag()
+        .context("Failed to get element as tag")?
+        .attributes()
+        .get("href")
+        .flatten()
+        .context("Failed to get href attribute")?
+        .as_utf8_str()
+        .to_string())
 }
 
 #[tracing::instrument]
