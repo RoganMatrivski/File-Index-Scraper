@@ -142,17 +142,15 @@ fn walker(url_root: &str, folder_root: &str) -> Result<Vec<SimpleFileInfo>> {
 }
 
 fn get_href_attr(node_handle: tl::NodeHandle, parser: &tl::Parser<'_>) -> Result<String> {
-    Ok(node_handle
-        .get(parser)
-        .context("Failed to get element")?
-        .as_tag()
-        .context("Failed to get element as tag")?
+    let element = node_handle.get(parser).context("Failed to get element")?;
+    let tag = element.as_tag().context("Failed to get element as tag")?;
+    let attr = tag
         .attributes()
         .get("href")
         .flatten()
-        .context("Failed to get href attribute")?
-        .as_utf8_str()
-        .to_string())
+        .context("Failed to get href attribute")?;
+
+    Ok(attr.as_utf8_str().to_string())
 }
 
 #[tracing::instrument]
