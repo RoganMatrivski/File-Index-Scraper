@@ -16,7 +16,7 @@ pub struct Args {
     pub verbose: u8,
 }
 
-const VERBOSE_LEVEL: &'static [&'static str] = &["info", "debug", "trace"];
+const VERBOSE_LEVEL: &[&str] = &["info", "debug", "trace"];
 
 pub fn initialize() -> Args {
     let args = Args::parse();

@@ -13,7 +13,7 @@ pub async fn walker_async(url_root: String, folder_root: String) -> Result<Vec<S
     tracing::info!("Scanning directory");
     tracing::trace!("Starting directory scan");
 
-    let new_url = if !url_root.ends_with("/") {
+    let new_url = if !url_root.ends_with('/') {
         format!("{}/", url_root)
     } else {
         url_root.to_string()
@@ -35,7 +35,7 @@ pub async fn walker_async(url_root: String, folder_root: String) -> Result<Vec<S
         .query_selector("a[href]")
         .context("Failed to get link element")?;
 
-    for link in element_find.into_iter() {
+    for link in element_find {
         let txt = get_href_attr(link, parser).unwrap();
 
         // Filter out links beginning with slash or question mark
@@ -55,19 +55,14 @@ pub async fn walker_async(url_root: String, folder_root: String) -> Result<Vec<S
         }
     }
 
-    if dirs.len() > 0 {
+    if !dirs.is_empty() {
         tracing::trace!("Iterating through directories")
     };
     let mut paths: Vec<SimpleFileInfo> = vec![];
 
     let dir_walker_tasks: FuturesOrdered<_> = dirs
         .into_iter()
-        .map(|dir| {
-            walker_async(
-                url_root.clone(),
-                format!("{}{}", folder_root.clone(), dir.clone()),
-            )
-        })
+        .map(|dir| walker_async(url_root.clone(), format!("{}{}", folder_root.clone(), dir)))
         .collect();
 
     let dir_walker_results: Vec<_> = dir_walker_tasks.collect().await;
@@ -98,7 +93,7 @@ pub async fn walker_async(url_root: String, folder_root: String) -> Result<Vec<S
 fn walker(url_root: &str, folder_root: &str) -> Result<Vec<SimpleFileInfo>, &'static str> {
     println!("# Walking through {}", folder_root);
 
-    let new_url = if !url_root.ends_with("/") {
+    let new_url = if !url_root.ends_with('/') {
         format!("{}/", url_root)
     } else {
         url_root.to_string()
@@ -113,7 +108,7 @@ fn walker(url_root: &str, folder_root: &str) -> Result<Vec<SimpleFileInfo>, &'st
     let mut dirs: Vec<String> = vec![];
     let mut files: Vec<String> = vec![];
 
-    for link in dom.query_selector("a[href]").unwrap().into_iter() {
+    for link in dom.query_selector("a[href]").unwrap() {
         let txt = get_href_attr(link, parser).unwrap();
 
         if txt.ends_with('/') {
