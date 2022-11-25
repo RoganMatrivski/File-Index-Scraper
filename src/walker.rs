@@ -5,6 +5,7 @@ use futures::StreamExt;
 use crate::simple_file_info::SimpleFileInfo;
 
 const EXCLUDED_CHARS: [char; 2] = ['/', '?'];
+const EXCLUDED_PATHS: [&str; 1] = ["../"];
 
 #[tracing::instrument(skip(url_root), name = "walker")]
 #[async_recursion::async_recursion(?Send)]
@@ -38,13 +39,8 @@ pub async fn walker_async(url_root: String, folder_root: String) -> Result<Vec<S
     for link in element_find {
         let txt = get_href_attr(link, parser).unwrap();
 
-        // Filter out links beginning with slash or question mark
-        let link_first_char = &txt
-            .chars()
-            .next()
-            .context("Failed to get first char of the link")?;
-
-        if EXCLUDED_CHARS.contains(link_first_char) {
+        // Filter out links that doesn't valid
+        if !(is_link_valid(&txt)?) {
             continue;
         }
 
@@ -87,6 +83,42 @@ pub async fn walker_async(url_root: String, folder_root: String) -> Result<Vec<S
     paths.append(&mut fileinfos);
 
     Ok(paths)
+}
+
+fn is_link_valid(url: &str) -> anyhow::Result<bool> {
+    // Check if link is relative
+    // For now, don't check the host. Just check if it's relative or not.
+    {
+        let lowercased_url = url.to_lowercase();
+        let regex = regex::Regex::new(r"^(?:[a-z+]+:)?//")?;
+        if regex.is_match(&lowercased_url) {
+            return Ok(false);
+        }
+    }
+
+    // Filter out links beginning with slash or question mark
+    {
+        let link_first_char = &url
+            .chars()
+            .next()
+            .context("Failed to get first char of the link")?;
+
+        if EXCLUDED_CHARS.contains(link_first_char) {
+            return Ok(false);
+        }
+    }
+
+    // Check if url is in a list of excluded paths
+    {
+        for path in EXCLUDED_PATHS {
+            if url == path {
+                // It's excluded, skip
+                return Ok(false);
+            }
+        }
+    }
+
+    Ok(true)
 }
 
 #[allow(dead_code)]
