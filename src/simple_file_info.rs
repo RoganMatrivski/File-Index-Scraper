@@ -10,6 +10,10 @@ impl SimpleFileInfo {
         format!("{}{}", self.dir, self.file)
     }
 
+    #[deprecated(
+        since = "0.1.4",
+        note = "Don't use this. This function assumes the url starts with './' which is incorrect."
+    )]
     #[tracing::instrument(skip(self))]
     pub fn get_url_relative_path(&self) -> String {
         self.get_full_path()[2..].to_string()

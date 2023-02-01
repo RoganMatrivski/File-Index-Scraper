@@ -9,7 +9,11 @@ const EXCLUDED_PATHS: [&str; 1] = ["../"];
 
 #[tracing::instrument(skip(url_root), name = "walker")]
 #[async_recursion::async_recursion(?Send)]
-pub async fn walker_async(url_root: String, folder_root: String) -> Result<Vec<SimpleFileInfo>> {
+pub async fn walker_async(
+    url_root: String,
+    url_query: String,
+    folder_root: String,
+) -> Result<Vec<SimpleFileInfo>> {
     // tracing::info!("# Walking through {}", folder_root);
     tracing::info!("Scanning directory");
     tracing::trace!("Starting directory scan");
@@ -22,7 +26,8 @@ pub async fn walker_async(url_root: String, folder_root: String) -> Result<Vec<S
     let url_root = new_url;
 
     tracing::debug!("Fetching index HTML file");
-    let html: String = get_html_async(format!("{}{}", url_root, folder_root).as_str()).await?;
+    let html: String =
+        get_html_async(format!("{}{}{}", &url_root, &folder_root, &url_query).as_str()).await?;
 
     tracing::trace!("Parsing HTML");
     let dom = tl::parse(&html, tl::ParserOptions::default())?;
@@ -58,7 +63,13 @@ pub async fn walker_async(url_root: String, folder_root: String) -> Result<Vec<S
 
     let dir_walker_tasks: FuturesOrdered<_> = dirs
         .into_iter()
-        .map(|dir| walker_async(url_root.clone(), format!("{}{}", folder_root.clone(), dir)))
+        .map(|dir| {
+            walker_async(
+                url_root.clone(),
+                url_query.clone(),
+                format!("{}{}", &folder_root, dir),
+            )
+        })
         .collect();
 
     let dir_walker_results: Vec<_> = dir_walker_tasks.collect().await;
