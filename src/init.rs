@@ -4,14 +4,18 @@ use tracing_subscriber::{fmt, prelude::*, registry, EnvFilter};
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
 pub struct Args {
+    /// The index URL to query
     pub url: String,
 
+    /// The output format, defaults to printing all the relative URLs in each line
     #[arg(short, long, value_enum, default_value_t = crate::enums::FormatArgs::PlainText)]
     pub format: crate::enums::FormatArgs,
 
+    /// Path to prepend on each `out=` path. Works only on aria2c format
     #[arg(short, long, default_value = ".")]
     pub base_path: String,
 
+    /// Verbosity log
     #[arg(short, long, action = clap::ArgAction::Count)]
     pub verbose: u8,
 }
