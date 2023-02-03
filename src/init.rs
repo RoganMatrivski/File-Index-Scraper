@@ -15,6 +15,10 @@ pub struct Args {
     #[arg(short, long, default_value = ".")]
     pub base_path: String,
 
+    /// Remove query string from output
+    #[arg(long)]
+    pub no_query: bool,
+
     /// Verbosity log
     #[arg(short, long, action = clap::ArgAction::Count)]
     pub verbose: u8,
