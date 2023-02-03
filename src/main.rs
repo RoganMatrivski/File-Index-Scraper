@@ -15,7 +15,7 @@ async fn main() -> anyhow::Result<()> {
     let mut split_url = url.split('?');
     let url = split_url.next().unwrap_or(&url).to_string();
     let url_query = ("?".to_string() + split_url.next().unwrap_or("")).to_string();
-    let res = walker_async(url.clone(), url_query.clone(), "".to_string()).await?;
+    let res = walker_async(&url, &url_query, "".to_string()).await?;
 
     match args.format {
         crate::enums::FormatArgs::PlainText => {

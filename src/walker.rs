@@ -1,6 +1,5 @@
-use anyhow::{Context, Result};
-use futures::stream::FuturesOrdered;
-use futures::StreamExt;
+use anyhow::{bail, Context, Result};
+use futures::{stream::FuturesOrdered, StreamExt};
 
 use crate::simple_file_info::SimpleFileInfo;
 
@@ -9,91 +8,77 @@ const EXCLUDED_PATHS: [&str; 1] = ["../"];
 
 #[tracing::instrument(skip(url_root), name = "walker")]
 #[async_recursion::async_recursion(?Send)]
-pub async fn walker_async(
-    url_root: String,
-    url_query: String,
+pub async fn walker_async<'a>(
+    url_root: &'a str,
+    url_query: &'a str,
     folder_root: String,
 ) -> Result<Vec<SimpleFileInfo>> {
-    // tracing::info!("# Walking through {}", folder_root);
     tracing::info!("Scanning directory");
-    tracing::trace!("Starting directory scan");
 
-    let new_url = if !url_root.ends_with('/') {
-        format!("{}/", url_root)
-    } else {
-        url_root.to_string()
-    };
-    let url_root = new_url;
+    if !url_root.ends_with('/') {
+        bail!("URL doesn't end with slash ('/')!");
+    }
 
     tracing::debug!("Fetching index HTML file");
     let html: String =
-        get_html_async(format!("{}{}{}", &url_root, &folder_root, &url_query).as_str()).await?;
+        get_html_async(format!("{url_root}{folder_root}{url_query}").as_str()).await?;
 
     tracing::trace!("Parsing HTML");
     let dom = tl::parse(&html, tl::ParserOptions::default())?;
     let parser = dom.parser();
-
-    let mut dirs: Vec<String> = vec![];
-    let mut files: Vec<String> = vec![];
 
     tracing::trace!("Parsing links");
     let element_find = dom
         .query_selector("a[href]")
         .context("Failed to get link element")?;
 
-    for link in element_find {
-        let txt = get_href_attr(link, parser).unwrap();
+    let links = element_find
+        .into_iter()
+        .map(|x| get_href_attr(&x, parser))
+        .collect::<Result<Vec<String>>>()?;
 
-        // Filter out links that doesn't valid
-        if !(is_link_valid(&txt)?) {
-            continue;
-        }
+    let valid_links = links
+        .iter()
+        .filter(|&x| is_link_valid(x))
+        .collect::<Vec<&String>>();
 
-        if txt.ends_with('/') {
-            dirs.push(txt);
-        } else {
-            files.push(txt);
-        }
-    }
+    let dirs = valid_links
+        .iter()
+        .filter(|&&x| x.ends_with('/'))
+        .collect::<Vec<&&String>>();
+
+    let files = valid_links
+        .iter()
+        .filter(|&&x| !x.ends_with('/'))
+        .collect::<Vec<&&String>>();
 
     if !dirs.is_empty() {
         tracing::trace!("Iterating through directories")
     };
-    let mut paths: Vec<SimpleFileInfo> = vec![];
 
     let dir_walker_tasks: FuturesOrdered<_> = dirs
-        .into_iter()
-        .map(|dir| {
-            walker_async(
-                url_root.clone(),
-                url_query.clone(),
-                format!("{}{}", &folder_root, dir),
-            )
-        })
+        .iter()
+        .map(|dir| walker_async(url_root, url_query, format!("{folder_root}{dir}")))
         .collect();
 
     let dir_walker_results: Vec<_> = dir_walker_tasks.collect().await;
-    for result in dir_walker_results {
-        // ! TODO: Probably set this to just warning on error, and add alert on warning
-        let mut result = result?;
-
-        tracing::trace!(
-            total_result = result.len(),
-            "Appending directory iter results"
-        );
-        paths.append(&mut result);
-    }
 
     tracing::trace!("Iterating through files");
-    let mut fileinfos: Vec<SimpleFileInfo> = files
+    let fileinfos = files
         .iter()
-        .map(|x| SimpleFileInfo::new(folder_root.to_string(), x.to_string()))
-        .collect();
+        .map(|x| SimpleFileInfo::new(folder_root.clone(), x.to_string()))
+        .collect::<Vec<SimpleFileInfo>>();
 
     tracing::trace!(total_result = fileinfos.len(), "Appending files");
-    paths.append(&mut fileinfos);
+    let res = dir_walker_results
+        .into_iter()
+        .collect::<Result<Vec<Vec<SimpleFileInfo>>, anyhow::Error>>()?
+        .into_iter()
+        .flatten()
+        .chain(fileinfos.into_iter())
+        .collect::<Vec<SimpleFileInfo>>();
 
-    Ok(paths)
+    Ok(res)
 }
 
 fn is_link_valid(url: &str) -> bool {
@@ -160,7 +145,7 @@ fn walker(url_root: &str, folder_root: &str) -> Result<Vec<SimpleFileInfo>> {
         .context("Failed to get link element")?;
 
     for link in element_find {
-        let txt = get_href_attr(link, parser)?;
+        let txt = get_href_attr(&link, parser)?;
 
         if txt.ends_with('/') {
             dirs.push(txt);
@@ -187,7 +172,10 @@ fn walker(url_root: &str, folder_root: &str) -> Result<Vec<SimpleFileInfo>> {
     Ok(paths)
 }
 
-fn get_href_attr(node_handle: tl::NodeHandle, parser: &tl::Parser<'_>) -> Result<String> {
+fn get_href_attr<'a>(
+    node_handle: &'a tl::NodeHandle,
+    parser: &'a tl::Parser<'a>,
+) -> Result<String> {
     let element = node_handle.get(parser).context("Failed to get element")?;
     let tag = element.as_tag().context("Failed to get element as tag")?;
     let attr = tag
