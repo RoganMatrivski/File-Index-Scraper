@@ -96,26 +96,29 @@ pub async fn walker_async(
     Ok(paths)
 }
 
-fn is_link_valid(url: &str) -> anyhow::Result<bool> {
+fn is_link_valid(url: &str) -> bool {
     // Check if link is relative
     // For now, don't check the host. Just check if it's relative or not.
     {
         let lowercased_url = url.to_lowercase();
-        let regex = regex::Regex::new(r"^(?:[a-z+]+:)?//")?;
+        let Ok(regex) = regex::Regex::new(r"^(?:[a-z+]+:)?//") else {
+            return false;
+        };
         if regex.is_match(&lowercased_url) {
-            return Ok(false);
+            return false;
         }
     }
 
     // Filter out links beginning with slash or question mark
     {
-        let link_first_char = &url
+        let Some(link_first_char) = &url
             .chars()
-            .next()
-            .context("Failed to get first char of the link")?;
+            .next() else {
+                return false
+            };
 
         if EXCLUDED_CHARS.contains(link_first_char) {
-            return Ok(false);
+            return false;
         }
     }
 
@@ -124,12 +127,12 @@ fn is_link_valid(url: &str) -> anyhow::Result<bool> {
         for path in EXCLUDED_PATHS {
             if url == path {
                 // It's excluded, skip
-                return Ok(false);
+                return false;
             }
         }
     }
 
-    Ok(true)
+    true
 }
 
 #[allow(dead_code)]
