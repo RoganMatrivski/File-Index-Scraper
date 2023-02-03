@@ -120,58 +120,6 @@ fn is_link_valid(url: &str) -> bool {
     true
 }
 
-#[allow(dead_code)]
-#[tracing::instrument]
-fn walker(url_root: &str, folder_root: &str) -> Result<Vec<SimpleFileInfo>> {
-    println!("# Walking through {}", folder_root);
-
-    let new_url = if !url_root.ends_with('/') {
-        format!("{}/", url_root)
-    } else {
-        url_root.to_string()
-    };
-    let url_root = new_url.as_str();
-
-    let html: String = get_html(format!("{}{}", url_root, folder_root).as_str())?;
-
-    let dom = tl::parse(&html, tl::ParserOptions::default())?;
-    let parser = dom.parser();
-
-    let mut dirs: Vec<String> = vec![];
-    let mut files: Vec<String> = vec![];
-
-    let element_find = dom
-        .query_selector("a[href]")
-        .context("Failed to get link element")?;
-
-    for link in element_find {
-        let txt = get_href_attr(&link, parser)?;
-
-        if txt.ends_with('/') {
-            dirs.push(txt);
-        } else {
-            files.push(txt);
-        }
-    }
-
-    let mut paths: Vec<SimpleFileInfo> = vec![];
-
-    for link in dirs {
-        let mut res = walker(url_root, format!("{}{}", folder_root, link).as_str())?;
-
-        paths.append(&mut res);
-    }
-
-    let mut fileinfos: Vec<SimpleFileInfo> = files
-        .iter()
-        .map(|x| SimpleFileInfo::new(folder_root.to_string(), x.to_string()))
-        .collect();
-
-    paths.append(&mut fileinfos);
-
-    Ok(paths)
-}
-
 fn get_href_attr<'a>(
     node_handle: &'a tl::NodeHandle,
     parser: &'a tl::Parser<'a>,
@@ -191,9 +139,4 @@ fn get_href_attr<'a>(
 async fn get_html_async(url_str: &str) -> Result<String, reqwest::Error> {
     tracing::trace!("Sending request");
     reqwest::get(url_str).await?.text().await
-}
-
-#[allow(dead_code)]
-fn get_html(url_str: &str) -> Result<String, reqwest::Error> {
-    reqwest::blocking::get(url_str)?.text()
 }
