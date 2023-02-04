@@ -1,5 +1,6 @@
 use anyhow::{bail, Context, Result};
 use futures::{stream::FuturesOrdered, StreamExt};
+use itertools::Itertools;
 
 use crate::simple_file_info::SimpleFileInfo;
 
@@ -12,6 +13,7 @@ pub async fn walker_async<'a>(
     url_root: &'a str,
     url_query: &'a str,
     folder_root: String,
+    sort: &'a Option<crate::enums::Sort>,
 ) -> Result<Vec<SimpleFileInfo>> {
     tracing::info!("Scanning directory");
 
@@ -37,10 +39,19 @@ pub async fn walker_async<'a>(
         .map(|x| get_href_attr(&x, parser))
         .collect::<Result<Vec<String>>>()?;
 
-    let valid_links = links
-        .iter()
-        .filter(|&x| is_link_valid(x))
-        .collect::<Vec<&String>>();
+    let valid_links_iter = links.iter().filter(|&x| is_link_valid(x));
+
+    // This one is overly complicated
+    // And i will probably refactor this in the (not so distant) future
+    let valid_links = match sort {
+        Some(sort_mode) => valid_links_iter
+            .sorted_by(|&a, &b| match sort_mode {
+                crate::enums::Sort::Up => Ord::cmp(a, b),
+                crate::enums::Sort::Down => Ord::cmp(b, a),
+            })
+            .collect::<Vec<&String>>(),
+        None => valid_links_iter.collect::<Vec<&String>>(),
+    };
 
     let dirs = valid_links
         .iter()
@@ -58,7 +69,7 @@ pub async fn walker_async<'a>(
 
     let dir_walker_tasks: FuturesOrdered<_> = dirs
         .iter()
-        .map(|dir| walker_async(url_root, url_query, format!("{folder_root}{dir}")))
+        .map(|dir| walker_async(url_root, url_query, format!("{folder_root}{dir}"), sort))
         .collect();
 
     let dir_walker_results: Vec<_> = dir_walker_tasks.collect().await;
@@ -72,7 +83,7 @@ pub async fn walker_async<'a>(
     tracing::trace!(total_result = fileinfos.len(), "Appending files");
     let res = dir_walker_results
         .into_iter()
-        .collect::<Result<Vec<Vec<SimpleFileInfo>>, anyhow::Error>>()?
+        .collect::<Result<Vec<Vec<SimpleFileInfo>>, anyhow::Error>>()? // Bubble error
         .into_iter()
         .flatten()
         .chain(fileinfos.into_iter())

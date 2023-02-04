@@ -27,7 +27,7 @@ async fn main() -> anyhow::Result<()> {
         url.to_string()
     };
 
-    let res = walker_async(&url, url_query, "".to_string()).await?;
+    let res = walker_async(&url, url_query, "".to_string(), &args.sort).await?;
 
     // Removes url_query if no_query toggle is true
     // Helps removing clutter if url query is not needed

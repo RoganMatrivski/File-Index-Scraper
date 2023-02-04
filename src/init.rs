@@ -19,6 +19,10 @@ pub struct Args {
     #[arg(long)]
     pub no_query: bool,
 
+    /// Sort the result alphabetically
+    #[arg(short, long, value_enum)]
+    pub sort: Option<crate::enums::Sort>,
+
     /// Verbosity log
     #[arg(short, long, action = clap::ArgAction::Count)]
     pub verbose: u8,
