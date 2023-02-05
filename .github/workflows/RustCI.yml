@@ -122,7 +122,7 @@ jobs:
           args: --release --target ${{ matrix.target }}
       - name: List target
         run: find ./target
-      - name: Compress
+      - name: Copy to artifacts folder
         run: |
           mkdir -p ./artifacts
           # windows is the only OS using a different convention for executable file name
@@ -159,6 +159,13 @@ jobs:
           path: ./artifacts/
       - name: List
         run: find ./artifacts
+      - name: Run UPX
+        uses: crazy-max/ghaction-upx@v2
+        with:
+          version: latest
+          files: |
+            ./artifacts/*
+          args: -f --ultra-brute
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
