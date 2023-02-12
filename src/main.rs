@@ -2,16 +2,26 @@
 use walker::walker_async;
 
 mod enums;
+mod filters;
 mod init;
 mod simple_file_info;
 mod walker;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    use regex::Regex;
+
     let args = crate::init::initialize();
 
     let url = args.url;
     let base = args.base_path + "/";
+
+    let regex_vec = args
+        .regex
+        .iter()
+        .map(|x| Regex::new(x))
+        .collect::<Result<Vec<Regex>, regex::Error>>()?;
+    let filters = filters::Filters::new(regex_vec);
 
     // Get the position of the question mark if exist, else just return string length
     let url_query_startpos = url.chars().position(|x| x == '?').unwrap_or(url.len());
@@ -28,6 +38,15 @@ async fn main() -> anyhow::Result<()> {
     };
 
     let res = walker_async(&url, url_query, "".to_string(), &args.sort).await?;
+
+    let res = res
+        .iter()
+        .filter(|x| {
+            let filename = x.get_decoded_filename();
+
+            filters.match_all_regex(&filename)
+        })
+        .collect::<Vec<&simple_file_info::SimpleFileInfo>>();
 
     // Removes url_query if no_query toggle is true
     // Helps removing clutter if url query is not needed

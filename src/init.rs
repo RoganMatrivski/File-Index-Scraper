@@ -26,6 +26,10 @@ pub struct Args {
     /// Verbosity log
     #[arg(short, long, action = clap::ArgAction::Count)]
     pub verbose: u8,
+
+    // Filter file name based on regex.
+    #[arg(long)]
+    pub regex: Vec<String>,
 }
 
 const VERBOSE_LEVEL: &[&str] = &["info", "debug", "trace"];

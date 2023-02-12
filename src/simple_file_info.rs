@@ -19,6 +19,13 @@ impl SimpleFileInfo {
         self.get_full_path()[2..].to_string()
     }
 
+    #[tracing::instrument(skip(self))]
+    pub fn get_decoded_filename(&self) -> String {
+        let conv_binary = urlencoding::decode_binary(self.file.as_bytes());
+
+        strbyte_to_utf8(conv_binary.to_vec())
+    }
+
     #[tracing::instrument(skip(self), fields(dir = self.dir, file = self.file))]
     pub fn get_decoded_full_path(&self) -> String {
         let full_path = self.get_full_path();
@@ -43,6 +50,26 @@ impl SimpleFileInfo {
         SimpleFileInfo {
             dir: _dir,
             file: _file,
+        }
+    }
+}
+
+fn strbyte_to_utf8(str: Vec<u8>) -> String {
+    match String::from_utf8(str.clone()) {
+        Ok(str) => str,
+        Err(_) => {
+            let vec_u8_str = str
+                .clone()
+                .into_iter()
+                .map(|x| x.to_string())
+                .collect::<Vec<String>>()
+                .join(", ");
+            tracing::warn!(
+                string = vec_u8_str,
+                "String is not a valid UTF-8 characters. Will attempt to loosely convert str."
+            );
+
+            String::from_utf8_lossy(&str).into_owned()
         }
     }
 }
