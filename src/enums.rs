@@ -4,6 +4,7 @@ use clap::ValueEnum;
 pub enum FormatArgs {
     PlainText,
     Aria2c,
+    Link,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]

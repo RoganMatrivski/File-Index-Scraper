@@ -67,6 +67,11 @@ async fn main() -> anyhow::Result<()> {
                 );
             }
         }
+        crate::enums::FormatArgs::Link => {
+            for link in res {
+                println!("{url}{}{}", link.get_decoded_full_path(), url_query);
+            }
+        }
     }
 
     Ok(())
