@@ -159,6 +159,8 @@ jobs:
           path: ./artifacts/
       - name: List
         run: find ./artifacts
+      - name: Make artifacts executable
+        run: sudo chmod +x ./artifacts/*
       - name: Run UPX
         uses: crazy-max/ghaction-upx@v2
         with:
