@@ -9,6 +9,7 @@ mod walker;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    use globset::{Glob, GlobMatcher};
     use regex::Regex;
 
     let args = crate::init::initialize();
@@ -21,7 +22,15 @@ async fn main() -> anyhow::Result<()> {
         .iter()
         .map(|x| Regex::new(x))
         .collect::<Result<Vec<Regex>, regex::Error>>()?;
-    let filters = filters::Filters::new(regex_vec);
+    let glob_vec = args
+        .glob
+        .iter()
+        .map(|x| Glob::new(x))
+        .collect::<Result<Vec<Glob>, globset::Error>>()?
+        .iter()
+        .map(|x| x.compile_matcher())
+        .collect::<Vec<GlobMatcher>>();
+    let filters = filters::Filters::new(regex_vec, glob_vec);
 
     // Get the position of the question mark if exist, else just return string length
     let url_query_startpos = url.chars().position(|x| x == '?').unwrap_or(url.len());
@@ -39,6 +48,7 @@ async fn main() -> anyhow::Result<()> {
 
     let res = walker_async(&url, url_query, "".to_string(), &args.sort).await?;
 
+    // Filters by regex
     let res = res
         .iter()
         .filter(|x| {
@@ -47,6 +57,16 @@ async fn main() -> anyhow::Result<()> {
             filters.match_all_regex(&filename)
         })
         .collect::<Vec<&simple_file_info::SimpleFileInfo>>();
+
+    // Filters by glob
+    let res = res
+        .iter()
+        .filter(|x| {
+            let path = x.get_decoded_full_path();
+
+            filters.match_all_glob(&path)
+        })
+        .collect::<Vec<&&simple_file_info::SimpleFileInfo>>();
 
     // Removes url_query if no_query toggle is true
     // Helps removing clutter if url query is not needed
