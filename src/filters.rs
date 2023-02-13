@@ -10,19 +10,10 @@ impl Filters {
     }
 
     pub fn match_all_regex(&self, str: &str) -> bool {
-        if self.regex.is_empty() {
-            return true;
-        }
-
-        // If there's any non-match, return false.
-        !self.regex.clone().iter().any(|x| !x.is_match(str))
+        !self.regex.iter().any(|x| !x.is_match(str))
     }
 
     pub fn match_all_glob(&self, str: &str) -> bool {
-        if self.glob.is_empty() {
-            return true;
-        }
-
-        !self.glob.clone().iter().any(|x| !x.is_match(str))
+        !self.glob.iter().any(|x| !x.is_match(str))
     }
 }
