@@ -1,9 +1,12 @@
 // #![allow(dead_code)]
 use walker::walker_async;
 
+use crate::json_struct::{JsonFile, JsonList};
+
 mod enums;
 mod filters;
 mod init;
+mod json_struct;
 mod simple_file_info;
 mod walker;
 
@@ -91,6 +94,26 @@ async fn main() -> anyhow::Result<()> {
             for link in res {
                 println!("{url}{}{}", link.get_decoded_full_path(), url_query);
             }
+        }
+        crate::enums::FormatArgs::Json => {
+            let entries = res
+                .iter()
+                .map(|x| JsonFile {
+                    filepath: std::path::PathBuf::from(x.get_full_path()),
+                    encoded_filepath: std::path::PathBuf::from(x.get_decoded_full_path()),
+                })
+                .collect::<Vec<JsonFile>>();
+
+            let json_list = JsonList {
+                version: "1.0".to_string(),
+                base_url: url.to_string(),
+                url_query: url_query.to_string(),
+                files: entries,
+            };
+
+            let json_encoded = serde_json::to_string_pretty(&json_list)?;
+
+            println!("{json_encoded}")
         }
     }
 
