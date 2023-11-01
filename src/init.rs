@@ -34,6 +34,14 @@ pub struct Args {
     // Filter file name based on glob.
     #[arg(long)]
     pub glob: Vec<String>,
+
+    // Exclude file name based on regex.
+    #[arg(long)]
+    pub exclude_regex: Vec<String>,
+
+    // Exclude file name based on glob.
+    #[arg(long)]
+    pub exclude_glob: Vec<String>,
 }
 
 const VERBOSE_LEVEL: &[&str] = &["info", "debug", "trace"];

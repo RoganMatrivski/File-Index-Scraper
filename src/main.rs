@@ -33,7 +33,20 @@ async fn main() -> anyhow::Result<()> {
         .iter()
         .map(|x| x.compile_matcher())
         .collect::<Vec<GlobMatcher>>();
-    let filters = filters::Filters::new(regex_vec, glob_vec);
+    let exclude_regex_vec = args
+        .exclude_regex
+        .iter()
+        .map(|x| Regex::new(x))
+        .collect::<Result<Vec<Regex>, regex::Error>>()?;
+    let exclude_glob_vec = args
+        .exclude_glob
+        .iter()
+        .map(|x| Glob::new(x))
+        .collect::<Result<Vec<Glob>, globset::Error>>()?
+        .iter()
+        .map(|x| x.compile_matcher())
+        .collect::<Vec<GlobMatcher>>();
+    let filters = filters::Filters::new(regex_vec, glob_vec, exclude_regex_vec, exclude_glob_vec);
 
     // Get the position of the question mark if exist, else just return string length
     let url_query_startpos = url.chars().position(|x| x == '?').unwrap_or(url.len());
@@ -52,24 +65,47 @@ async fn main() -> anyhow::Result<()> {
     let res = walker_async(&url, url_query, "".to_string(), &args.sort).await?;
 
     // Filters by regex
-    let res = res
+    let res: Vec<_> = res
         .iter()
         .filter(|x| {
             let filename = x.get_decoded_filename();
 
             filters.match_all_regex(&filename)
+                && filters.match_all_glob(&filename)
+                && filters.match_all_regex_exclude(&filename)
+                && filters.match_all_glob_exclude(&filename)
         })
-        .collect::<Vec<&simple_file_info::SimpleFileInfo>>();
+        .collect();
 
-    // Filters by glob
-    let res = res
-        .iter()
-        .filter(|x| {
-            let path = x.get_decoded_full_path();
+    // // Filters by glob
+    // let res = res
+    //     .iter()
+    //     .filter(|x| {
+    //         let path = x.get_decoded_full_path();
 
-            filters.match_all_glob(&path)
-        })
-        .collect::<Vec<&&simple_file_info::SimpleFileInfo>>();
+    //         filters.match_all_glob(&path)
+    //     })
+    //     .collect::<Vec<&&simple_file_info::SimpleFileInfo>>();
+
+    // // Filters by glob
+    // let res = res
+    //     .iter()
+    //     .filter(|x| {
+    //         let path = x.get_decoded_full_path();
+
+    //         filters.match_all_regex_exclude(&path)
+    //     })
+    //     .collect::<Vec<&&simple_file_info::SimpleFileInfo>>();
+
+    // // Filters by glob
+    // let res = res
+    //     .iter()
+    //     .filter(|x| {
+    //         let path = x.get_decoded_full_path();
+
+    //         filters.match_all_glob_exclude(&path)
+    //     })
+    //     .collect::<Vec<&&simple_file_info::SimpleFileInfo>>();
 
     // Removes url_query if no_query toggle is true
     // Helps removing clutter if url query is not needed

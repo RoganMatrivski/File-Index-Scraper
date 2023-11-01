@@ -25,6 +25,7 @@ pub async fn walker_async<'a>(
     let html: String =
         get_html_async(format!("{url_root}{folder_root}{url_query}").as_str()).await?;
 
+    // TODO: Replace TL with something that are "Send"able.
     tracing::trace!("Parsing HTML");
     let dom = tl::parse(&html, tl::ParserOptions::default())?;
     let parser = dom.parser();
@@ -107,11 +108,9 @@ fn is_link_valid(url: &str) -> bool {
 
     // Filter out links beginning with slash or question mark
     {
-        let Some(link_first_char) = &url
-            .chars()
-            .next() else {
-                return false
-            };
+        let Some(link_first_char) = &url.chars().next() else {
+            return false;
+        };
 
         if EXCLUDED_CHARS.contains(link_first_char) {
             return false;
