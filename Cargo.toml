@@ -1,9 +1,16 @@
 [package]
 name = "file_index_scraper"
-version = "0.1.7"
+version = "0.1.8"
 edition = "2021"
+license = "MIT OR Apache-2.0"
+description = "Scrapes file server `index.html` and then processes it."
+repository = "https://github.com/RoganMatrivski/File-Index-Scraper"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[[bin]]
+name = "file-index-scraper"
+path = "src/main.rs"
 
 [dependencies]
 anyhow = "1.0.66"
@@ -17,7 +24,7 @@ reqwest = { version = "0.11.12", default-features = false, features = [
     "blocking",
     "rustls-tls",
 ] }
-serde = { version = "1.0.183", features = ["derive"] }
+serde = { version = "<=1.0.171", features = ["derive"] }
 serde_json = "1.0.104"
 tl = "0.7.7"
 tokio = { version = "1.21.2", features = ["rt-multi-thread", "macros"] }
