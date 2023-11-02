@@ -77,36 +77,6 @@ async fn main() -> anyhow::Result<()> {
         })
         .collect();
 
-    // // Filters by glob
-    // let res = res
-    //     .iter()
-    //     .filter(|x| {
-    //         let path = x.get_decoded_full_path();
-
-    //         filters.match_all_glob(&path)
-    //     })
-    //     .collect::<Vec<&&simple_file_info::SimpleFileInfo>>();
-
-    // // Filters by glob
-    // let res = res
-    //     .iter()
-    //     .filter(|x| {
-    //         let path = x.get_decoded_full_path();
-
-    //         filters.match_all_regex_exclude(&path)
-    //     })
-    //     .collect::<Vec<&&simple_file_info::SimpleFileInfo>>();
-
-    // // Filters by glob
-    // let res = res
-    //     .iter()
-    //     .filter(|x| {
-    //         let path = x.get_decoded_full_path();
-
-    //         filters.match_all_glob_exclude(&path)
-    //     })
-    //     .collect::<Vec<&&simple_file_info::SimpleFileInfo>>();
-
     // Removes url_query if no_query toggle is true
     // Helps removing clutter if url query is not needed
     let url_query = if args.no_query { "" } else { url_query };
