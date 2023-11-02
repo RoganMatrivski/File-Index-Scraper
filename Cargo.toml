@@ -11,6 +11,7 @@ repository = "https://github.com/RoganMatrivski/File-Index-Scraper"
 [[bin]]
 name = "file-index-scraper"
 path = "src/main.rs"
+edition = "2021"
 
 [dependencies]
 anyhow = "1.0.66"
@@ -18,14 +19,14 @@ async-recursion = "1.0.0"
 clap = { version = "4.0.22", features = ["derive"] }
 futures = "0.3.25"
 globset = "0.4.10"
-itertools = "0.10.5"
+itertools = "0.11.0"
 regex = "1.7.0"
 reqwest = { version = "0.11.12", default-features = false, features = [
     "blocking",
     "rustls-tls",
 ] }
-serde = { version = "<=1.0.171", features = ["derive"] }
-serde_json = "1.0.104"
+serde = { version = "1.0.190", features = ["derive"] }
+serde_json = "1.0.108"
 tl = "0.7.7"
 tokio = { version = "1.21.2", features = ["rt-multi-thread", "macros"] }
 tracing = "0.1.37"
