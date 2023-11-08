@@ -18,7 +18,14 @@ async fn main() -> anyhow::Result<()> {
     let args = crate::init::initialize();
 
     let url = args.url;
-    let base = args.base_path + "/";
+    let base = {
+        // Crude way to make sure the base-path is a directory path
+        std::path::PathBuf::from(if !args.base_path.ends_with('/') {
+            args.base_path + "/"
+        } else {
+            args.base_path.to_owned()
+        })
+    };
 
     let regex_vec = args
         .regex
@@ -89,10 +96,18 @@ async fn main() -> anyhow::Result<()> {
         }
         crate::enums::FormatArgs::Aria2c => {
             for link in res {
+                let joined_path = base.join(&link.get_decoded_full_path());
+
+                // This shouldn't've been possible. (wow what a word contraction)
+                // If it does, someone is going to let me know as soon as i publish this.
+                let path_parent = joined_path.parent().unwrap().to_string_lossy();
+                let filename = joined_path.file_name().unwrap().to_string_lossy();
+
                 println!(
-                    "{}\n    out={}",
+                    "{}\n\tdir={}\n\tout={}",
                     url.to_owned() + &link.get_full_path() + url_query,
-                    base.to_owned() + &link.get_decoded_full_path()
+                    path_parent,
+                    filename
                 );
             }
         }
