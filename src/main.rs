@@ -7,6 +7,7 @@ mod enums;
 mod filters;
 mod init;
 mod json_struct;
+mod parser;
 mod simple_file_info;
 mod walker;
 
@@ -69,7 +70,10 @@ async fn main() -> anyhow::Result<()> {
         url.to_string()
     };
 
-    let res = walker_async(&url, url_query, "".to_string(), &args.sort).await?;
+    // Spawn a thread that will parse all HTMLs
+    // I'm splitting these because tl parser is not Send-able
+
+    let res = walker_async(&url, url_query, "".to_string(), args.sort.as_ref()).await?;
 
     // Filters by regex
     let res: Vec<_> = res
