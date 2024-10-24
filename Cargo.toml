@@ -3,8 +3,9 @@ name = "file_index_scraper"
 version = "0.1.8"
 edition = "2021"
 license = "MIT OR Apache-2.0"
-description = "Scrapes file server `index.html` and then processes it."
+description = "Scrapes `index.html` from common file servers and then processes it."
 repository = "https://github.com/RoganMatrivski/File-Index-Scraper"
+homepage = "https://github.com/RoganMatrivski/File-Index-Scraper"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
