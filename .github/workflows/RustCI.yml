@@ -18,11 +18,10 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Install rust
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: stable
           components: rustfmt
-          profile: minimal
       - name: Cargo cache
         uses: actions/cache@v3
         with:
@@ -110,10 +109,9 @@ jobs:
           linker = "arm-linux-gnueabihf-gcc"
           EOF
       - name: Install rust
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: stable
-          profile: minimal
           target: ${{matrix.TARGET}}
       - name: Build target
         uses: actions-rs/cargo@v1
