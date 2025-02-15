@@ -141,7 +141,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           # Need to make each build name unique to avoid overwriting
-          name: ${{ env.RUN_UNIQUE_ID }}_artifact_${{ matrix.step }}
+          name: artifact_${{ matrix.TARGET }}
           path: |
             ./artifacts/*
 
