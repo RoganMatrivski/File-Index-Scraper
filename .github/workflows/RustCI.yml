@@ -140,7 +140,7 @@ jobs:
           fi
           mv ./target/$TARGET/release/$EXEC ./artifacts/$NAME-$TARGET-$TAG$EXEC_SUFFIX
       - name: Archive artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: result
           path: |
@@ -153,7 +153,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download artifacts
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v4
         with:
           name: result
           path: ./artifacts/
