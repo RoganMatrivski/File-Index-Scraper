@@ -167,7 +167,9 @@ jobs:
           version: latest
           files: |
             ./artifacts/*
-          args: -f --ultra-brute
+          # Had to add --force-macos cuz i'm lazy and
+          # i'm sure no one uses this AND uses macOS 13
+          args: -f --ultra-brute --force-macos
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
